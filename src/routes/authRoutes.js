@@ -8,6 +8,7 @@ const {
   forgotPassword,
   verifyResetOtp,
   resetPassword,
+  updateNotificationPreferences,
 } = require("../controllers/authController");
 const { protect } = require("../middleware/authMiddleware");
 
@@ -281,5 +282,31 @@ router.post("/verify-reset-otp", otpVerifyLimiter, verifyResetOtp);
  *         description: Invalid/expired reset session or weak password
  */
 router.post("/reset-password", otpVerifyLimiter, resetPassword);
+
+/**
+ * @swagger
+ * /api/auth/notifications:
+ *   patch:
+ *     summary: Toggle email notification opt-out for the current user
+ *     tags: [Auth]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [optedOut]
+ *             properties:
+ *               optedOut:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Preference updated
+ *       401:
+ *         description: Not authorized
+ */
+router.patch("/notifications", protect, updateNotificationPreferences);
 
 module.exports = router;
