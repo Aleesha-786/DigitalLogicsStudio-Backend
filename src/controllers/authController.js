@@ -15,6 +15,7 @@ const {
   hashValue,
   generateResetToken,
 } = require("../utils/otp");
+const { sendWelcomeNotification } = require("../services/notificationService");
 
 function sanitizeUser(user) {
   return {
@@ -23,6 +24,7 @@ function sanitizeUser(user) {
     email: user.email,
     solvedProblems: user.solvedProblems || [],
     createdAt: user.createdAt,
+    emailNotificationsOptedOut: user.notifications?.optedOut || false,
   };
 }
 
@@ -85,6 +87,8 @@ async function registerUser(req, res, next) {
 
     const token = generateToken(user._id.toString());
     setAuthCookie(res, token);
+
+    sendWelcomeNotification(user);
 
     res.status(201).json({
       success: true,
@@ -294,6 +298,29 @@ async function resetPassword(req, res, next) {
   }
 }
 
+async function updateNotificationPreferences(req, res, next) {
+  try {
+    const { optedOut } = req.body;
+
+    if (typeof optedOut !== "boolean") {
+      throw createHttpError(400, "optedOut must be a boolean.");
+    }
+
+    req.user.notifications.optedOut = optedOut;
+    await req.user.save();
+
+    res.status(200).json({
+      success: true,
+      message: optedOut
+        ? "You've been unsubscribed from email notifications."
+        : "Email notifications re-enabled.",
+      user: sanitizeUser(req.user),
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   registerUser,
   loginUser,
@@ -302,4 +329,5 @@ module.exports = {
   forgotPassword,
   verifyResetOtp,
   resetPassword,
+  updateNotificationPreferences, 
 };

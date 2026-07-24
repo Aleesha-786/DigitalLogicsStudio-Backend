@@ -1,6 +1,7 @@
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const { createHttpError } = require("../utils/httpError");
+const { checkMilestones } = require("../services/notificationService");
 
 const toDateKey = (date = new Date()) =>
   new Date(date).toISOString().slice(0, 10);
@@ -89,6 +90,11 @@ async function completeProblem(req, res, next) {
     if (!req.user.solvedProblems.includes(problemId)) {
       req.user.solvedProblems.push(problemId);
       await req.user.save();
+
+      // check for a milestone (5, 10, 25 solved, etc) and email if
+      // one was just hit. Fire-and-forget — never blocks the response, and
+      // any failure is only logged (see notificationService).
+      checkMilestones(req.user, req.user.solvedProblems.length);
     }
 
     if (!wasSolved) {
