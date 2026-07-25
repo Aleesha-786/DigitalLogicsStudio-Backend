@@ -47,6 +47,18 @@ const userSchema = new mongoose.Schema(
       tokenHash: { type: String, select: false, default: null },
       tokenExpires: { type: Date, select: false, default: null },
     },
+
+    // ── Email notification state ──
+    // Tracks what's already been sent so scheduled jobs stay idempotent no
+    // matter how often the cron/poller runs.
+    notifications: {
+      milestonesSent: { type: [Number], default: [] },
+      lastDigestSentAt: { type: Date, default: null },
+      lastInactivityReminderAt: { type: Date, default: null },
+      // Single global opt-out switch. Kept simple on purpose — split into
+      // per-type toggles later if you need finer control.
+      optedOut: { type: Boolean, default: false },
+    },
   },
   {
     timestamps: true,

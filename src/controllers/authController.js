@@ -1,4 +1,6 @@
 const User = require("../models/User");
+const UserProgress = require("../models/UserProgress");
+const EmailQueue = require("../models/EmailQueue");
 const {
   assertAuthConfig,
   clearAuthCookie,
@@ -15,6 +17,7 @@ const {
   hashValue,
   generateResetToken,
 } = require("../utils/otp");
+const { sendWelcomeNotification } = require("../services/notificationService");
 
 function sanitizeUser(user) {
   return {
@@ -23,6 +26,7 @@ function sanitizeUser(user) {
     email: user.email,
     solvedProblems: user.solvedProblems || [],
     createdAt: user.createdAt,
+    emailNotificationsOptedOut: user.notifications?.optedOut || false,
   };
 }
 
@@ -85,6 +89,8 @@ async function registerUser(req, res, next) {
 
     const token = generateToken(user._id.toString());
     setAuthCookie(res, token);
+
+    sendWelcomeNotification(user);
 
     res.status(201).json({
       success: true,
@@ -157,8 +163,6 @@ async function forgotPassword(req, res, next) {
     const normalizedEmail = normalizeEmail(email);
     const user = await User.findOne({ email: normalizedEmail });
 
-    // Respond identically whether or not the account exists, to avoid
-    // leaking which emails are registered.
     if (!user) {
       return res.status(200).json({ success: true, message: GENERIC_OTP_MESSAGE });
     }
@@ -294,6 +298,99 @@ async function resetPassword(req, res, next) {
   }
 }
 
+async function updateNotificationPreferences(req, res, next) {
+  try {
+    const { optedOut } = req.body;
+
+    if (typeof optedOut !== "boolean") {
+      throw createHttpError(400, "optedOut must be a boolean.");
+    }
+
+    req.user.notifications.optedOut = optedOut;
+    await req.user.save();
+
+    res.status(200).json({
+      success: true,
+      message: optedOut
+        ? "You've been unsubscribed from email notifications."
+        : "Email notifications re-enabled.",
+      user: sanitizeUser(req.user),
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// NEW — PATCH-equivalent for password, but while already logged in (as
+// opposed to forgotPassword's unauthenticated OTP flow).
+async function changePassword(req, res, next) {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      throw createHttpError(400, "Current password and new password are required.");
+    }
+
+    if (newPassword.length < 8) {
+      throw createHttpError(400, "New password must be at least 8 characters long.");
+    }
+
+    if (newPassword === currentPassword) {
+      throw createHttpError(400, "New password must be different from your current password.");
+    }
+
+    // req.user from `protect` doesn't include +password — re-fetch it.
+    const user = await User.findById(req.user._id).select("+password");
+
+    if (!user || !(await user.matchPassword(currentPassword))) {
+      throw createHttpError(401, "Current password is incorrect.");
+    }
+
+    user.password = newPassword; // pre-save hook re-hashes
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Password updated successfully.",
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// NEW — permanently deletes the account and its associated data.
+// Requires the current password as confirmation.
+async function deleteAccount(req, res, next) {
+  try {
+    const { password } = req.body;
+
+    if (!password) {
+      throw createHttpError(400, "Please confirm your password to delete your account.");
+    }
+
+    const user = await User.findById(req.user._id).select("+password");
+
+    if (!user || !(await user.matchPassword(password))) {
+      throw createHttpError(401, "Incorrect password.");
+    }
+
+    await Promise.all([
+      UserProgress.deleteOne({ userId: user._id }),
+      EmailQueue.deleteMany({ userId: user._id }),
+      user.deleteOne(),
+    ]);
+
+    clearAuthCookie(res);
+
+    res.status(200).json({
+      success: true,
+      message: "Your account and all associated data have been deleted.",
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   registerUser,
   loginUser,
@@ -302,4 +399,7 @@ module.exports = {
   forgotPassword,
   verifyResetOtp,
   resetPassword,
+  updateNotificationPreferences,
+  changePassword,
+  deleteAccount,
 };

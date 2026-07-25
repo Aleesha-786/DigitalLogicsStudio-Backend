@@ -11,5 +11,11 @@
       "source": "/(.*)",
       "destination": "/server.js"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/internal/run-daily-jobs",
+      "schedule": "0 9 * * *"
+    }
   ]
 }
