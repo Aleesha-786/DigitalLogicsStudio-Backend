@@ -9,6 +9,8 @@ const healthRoutes = require("./routes/healthRoutes");
 const progressRoutes = require("./routes/progressRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const internalRoutes = require("./routes/internalRoutes");
+const circuitRoutes = require("./routes/circuitRoutes");
+
 const { errorHandler, notFound } = require("./middleware/errorMiddleware");
 
 dotenv.config();
@@ -117,6 +119,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/internal", internalRoutes);
+app.use("/api/trainer-board", circuitRoutes);
 
 // ─── Error handlers ──────────────────────────────────────────────────────────
 app.use(notFound);
