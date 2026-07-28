@@ -2,8 +2,10 @@ const express = require("express");
 const { requireAiAuth } = require("../ai/middleware/aiAuth");
 const { aiChatRateLimiter } = require("../ai/middleware/aiRateLimit");
 const { handleChat, handleChatStream } = require("../ai/controllers/chatController");
+const { handleGetHint } = require("../ai/controllers/hintController");
 
 const router = express.Router();
+
 
 /**
  * @swagger
@@ -80,5 +82,22 @@ router.post("/chat", requireAiAuth, aiChatRateLimiter, handleChat);
  *         description: Rate limit exceeded
  */
 router.post("/chat/stream", requireAiAuth, aiChatRateLimiter, handleChatStream);
+
+/**
+ * @swagger
+ * /api/ai/hint:
+ *   post:
+ *     summary: Get non-spoiler hint for a digital logic circuit
+ *     tags: [AI Chat]
+ *     description: Analyzes problem requirements and current canvas state to generate non-spoiler guidance.
+ *     responses:
+ *       200:
+ *         description: Hint generated successfully
+ *       401:
+ *         description: Unauthorized
+ *       429:
+ *         description: Rate limit exceeded
+ */
+router.post("/hint", requireAiAuth, aiChatRateLimiter, handleGetHint);
 
 module.exports = router;

@@ -20,16 +20,21 @@ async function cleanupStaleUserIndexes() {
 
 const connectDB = async () => {
   if (!process.env.MONGO_URI) {
-    throw new Error("MONGO_URI is missing in environment variables");
+    console.warn("[db] MONGO_URI is missing. Running without database connection.");
+    return;
   }
 
-  const connection = await mongoose.connect(process.env.MONGO_URI, {
-    maxPoolSize: 10,
-    serverSelectionTimeoutMS: 5000,
-    socketTimeoutMS: 45000,
-  });
-  console.log(`MongoDB connected: ${connection.connection.host}`);
-  await cleanupStaleUserIndexes();
+  try {
+    const connection = await mongoose.connect(process.env.MONGO_URI, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 3000,
+      socketTimeoutMS: 15000,
+    });
+    console.log(`MongoDB connected: ${connection.connection.host}`);
+    await cleanupStaleUserIndexes();
+  } catch (err) {
+    console.warn(`[db] MongoDB connection failed (${err.message}). Express server running in offline/API mode.`);
+  }
 };
 
 module.exports = connectDB;
