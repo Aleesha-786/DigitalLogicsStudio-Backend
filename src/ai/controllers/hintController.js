@@ -16,7 +16,11 @@ async function handleGetHint(req, res) {
     last_result = null,
   } = req.body || {};
 
-  const circuitMindUrl = process.env.CIRCUITMIND_API_URL || "http://127.0.0.1:8000";
+  const circuitMindUrl =
+    process.env.CIRCUITMIND_API_URL ||
+    (process.env.NODE_ENV === "production"
+      ? "https://circuit-mind-two.vercel.app"
+      : "http://127.0.0.1:8000");
   const apiKey = process.env.CIRCUITMIND_API_KEY;
 
   // 1. Attempt to call CircuitMind API endpoint
