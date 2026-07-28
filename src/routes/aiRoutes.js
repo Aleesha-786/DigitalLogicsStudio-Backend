@@ -3,6 +3,7 @@ const { requireAiAuth } = require("../ai/middleware/aiAuth");
 const { aiChatRateLimiter } = require("../ai/middleware/aiRateLimit");
 const { handleChat, handleChatStream } = require("../ai/controllers/chatController");
 const { handleGetHint } = require("../ai/controllers/hintController");
+const { handleGenerateCircuit } = require("../ai/controllers/generateCircuitController");
 
 const router = express.Router();
 
@@ -99,5 +100,22 @@ router.post("/chat/stream", requireAiAuth, aiChatRateLimiter, handleChatStream);
  *         description: Rate limit exceeded
  */
 router.post("/hint", requireAiAuth, aiChatRateLimiter, handleGetHint);
+
+/**
+ * @swagger
+ * /api/ai/generate-circuit:
+ *   post:
+ *     summary: Generate a complete gate-graph circuit solution by AI
+ *     tags: [AI Chat]
+ *     description: Converts prompt or problem spec into a visual gate-graph JSON structure.
+ *     responses:
+ *       200:
+ *         description: Circuit generated successfully
+ *       401:
+ *         description: Unauthorized
+ *       429:
+ *         description: Rate limit exceeded
+ */
+router.post("/generate-circuit", requireAiAuth, aiChatRateLimiter, handleGenerateCircuit);
 
 module.exports = router;
