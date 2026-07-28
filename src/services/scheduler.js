@@ -1,16 +1,13 @@
+const mongoose = require("mongoose");
 const { processPendingEmails } = require("./emailQueueService");
 const { runInactivityCheck, runWeeklyDigest } = require("./notificationService");
 
 /**
- * Only call this from the long-running local/dev process (see server.js's
- * non-production branch). Never call this from the Vercel serverless
- * handler — setInterval there would just be discarded when the function
- * instance freezes/recycles between requests. Production relies on Vercel
- * Cron hitting /api/internal/run-daily-jobs instead.
+ * Only call this from the long-running local/dev process.
  */
 function startLocalScheduler() {
-  // Retry anything pending/failed-and-due every minute — fast feedback while developing.
   setInterval(() => {
+    if (mongoose.connection.readyState !== 1) return;
     processPendingEmails(20).catch((err) =>
       console.error("[scheduler] processPendingEmails error:", err.message),
     );
