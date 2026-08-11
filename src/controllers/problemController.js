@@ -53,17 +53,24 @@ function readProblemPayload(body = {}) {
   if (!Array.isArray(outputs) || outputs.length === 0) {
     throw createHttpError(400, "At least one output port is required.");
   }
-  if (!Array.isArray(truthTable) || truthTable.length !== 2 ** inputs.length) {
+  if (!Array.isArray(truthTable)) {
+    throw createHttpError(400, "truthTable must be an array (use [] for non-circuit problems).");
+  }
+  // Circuit-style problems (DLD) must have a complete truth table. MCQ /
+  // conceptual problems (COAL) intentionally ship with an empty truth table
+  // — only enforce the 2^n row-count rule when rows were actually supplied,
+  // so a nonempty-but-short truth table still gets caught.
+  if (truthTable.length > 0 && truthTable.length !== 2 ** inputs.length) {
     throw createHttpError(
       400,
-      `Truth table must have exactly ${2 ** inputs.length} rows for ${inputs.length} input(s).`,
+      `Truth table must have exactly ${2 ** inputs.length} rows for ${inputs.length} input(s), or be left empty for non-circuit problems.`,
     );
   }
   const expectedKeys = [...inputs, ...outputs].sort().join(",");
   const badRow = truthTable.find(
     (row) => Object.keys(row || {}).sort().join(",") !== expectedKeys,
   );
-  if (badRow) {
+  if (truthTable.length > 0 && badRow) {
     throw createHttpError(400, "Every truth table row must match the declared inputs/outputs exactly.");
   }
 
@@ -169,3 +176,4 @@ module.exports = {
   updateProblem,
   deleteProblem,
 };
+
