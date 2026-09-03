@@ -123,6 +123,7 @@ app.use("/api/internal", internalRoutes);
 app.use("/api/trainer-board", circuitRoutes);
 app.use("/api/custom-components", customComponentRoutes);
 
+
 // ─── Error handlers ──────────────────────────────────────────────────────────
 app.use(notFound);
 app.use(errorHandler);

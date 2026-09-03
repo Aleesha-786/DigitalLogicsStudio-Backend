@@ -31,6 +31,12 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
 
+    role: {
+      type: String,
+      enum: ["student", "instructor", "admin"],
+      default: "student",
+    },
+
     // ── Legacy flat array kept for backward compat ──
     // Small enough (array of numbers) that it's cheap to keep on the user
     // doc; the detailed problem records live in UserProgress now.
