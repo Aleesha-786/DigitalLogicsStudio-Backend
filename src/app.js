@@ -11,6 +11,7 @@ const aiRoutes = require("./routes/aiRoutes");
 const internalRoutes = require("./routes/internalRoutes");
 const circuitRoutes = require("./routes/circuitRoutes");
 const customComponentRoutes = require("./routes/customComponentRoutes");
+const savedProjectRoutes = require("./routes/savedProjectRoutes");
 
 const { errorHandler, notFound } = require("./middleware/errorMiddleware");
 
@@ -29,6 +30,7 @@ app.set("trust proxy", 1);
 // general one. body-parser skips re-parsing a request whose body has
 // already been read (`req._body`), so this only affects this one route —
 // every other route still gets the strict 10kb ceiling from SECURITY.md.
+app.use("/api/boolforge-projects", savedProjectRoutes);
 app.use("/api/auth/profile", express.json({ limit: "8mb" }));
 
 app.use(express.json({ limit: "10kb" }));
